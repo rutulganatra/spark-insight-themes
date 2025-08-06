@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { CheckCircle, XCircle, Clock, Bot, User } from "lucide-react";
 
 export interface StreamMessage {
@@ -15,7 +18,7 @@ interface WorkflowStreamPanelProps {
   messages: StreamMessage[];
   isWaitingForApproval: boolean;
   onApprove: () => void;
-  onReject: () => void;
+  onReject: (reason: string) => void;
   layout: 'vertical' | 'split' | 'cards';
 }
 
@@ -26,6 +29,16 @@ export function WorkflowStreamPanel({
   onReject, 
   layout 
 }: WorkflowStreamPanelProps) {
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+
+  const handleRejectSubmit = () => {
+    if (rejectionReason.trim()) {
+      onReject(rejectionReason);
+      setRejectionReason("");
+      setIsRejectDialogOpen(false);
+    }
+  };
   const getAgentIcon = (agentName: string) => {
     const icons = {
       'PlannerAgent': '🎯',
@@ -136,10 +149,47 @@ export function WorkflowStreamPanel({
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Approve & Continue
                 </Button>
-                <Button onClick={onReject} className="btn-reject">
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Reject & Restart
-                </Button>
+                <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="btn-reject">
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Reject & Restart
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Reason for Rejection</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="rejection-reason">Please provide a reason for rejecting this workflow:</Label>
+                        <Textarea
+                          id="rejection-reason"
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                          placeholder="Enter your reason for rejection..."
+                          className="mt-2"
+                          rows={4}
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setIsRejectDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleRejectSubmit}
+                          disabled={!rejectionReason.trim()}
+                          className="btn-reject"
+                        >
+                          Submit Rejection
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </div>

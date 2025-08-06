@@ -90,7 +90,7 @@ export function AIWorkflowDemo() {
     });
   };
 
-  const handleRejection = () => {
+  const handleRejection = (reason: string) => {
     setMessages([]);
     setIsWaitingForApproval(false);
     setIsWorkflowActive(false);
