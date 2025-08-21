@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
+import { UserInputPanel } from "./UserInputPanel";
 import { WorkflowStreamPanel, StreamMessage } from "./WorkflowStreamPanel";
 import { SummaryPanel } from "./SummaryPanel";
 import { ThemeSelector, Theme } from "./ThemeSelector";
-import { AppSidebar } from "./AppSidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Layout, LayoutGrid, Layers } from "lucide-react";
 
 export function AIWorkflowDemo() {
   const [currentTheme, setCurrentTheme] = useState<Theme>('professional');
+  const [currentLayout, setCurrentLayout] = useState<'vertical' | 'split' | 'cards'>('vertical');
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [isWorkflowActive, setIsWorkflowActive] = useState(false);
   const [isWaitingForApproval, setIsWaitingForApproval] = useState(false);
@@ -97,70 +97,109 @@ export function AIWorkflowDemo() {
     setSummaryData(null);
   };
 
+  const layouts = [
+    { id: 'vertical' as const, name: 'Stacked', icon: Layers, description: 'Panels stacked vertically' },
+    { id: 'split' as const, name: 'Split Screen', icon: Layout, description: 'Side-by-side layout' },
+    { id: 'cards' as const, name: 'Card Layout', icon: LayoutGrid, description: 'Clean card design' }
+  ];
+
+  const getLayoutClass = () => {
+    switch (currentLayout) {
+      case 'split':
+        return 'grid grid-cols-1 lg:grid-cols-2 gap-6';
+      case 'cards':
+        return 'space-y-6';
+      default:
+        return 'space-y-6';
+    }
+  };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background transition-colors duration-300">
-        <AppSidebar onStartWorkflow={simulateWorkflow} isLoading={isLoading} />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-16 items-center px-4 lg:px-6">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger />
-                <div>
-                  <h1 className="text-xl font-bold text-foreground">
-                    AI Workflow Demo
-                  </h1>
-                  <p className="text-sm text-muted-foreground hidden sm:block">
-                    Explore AI-powered data analysis workflows
-                  </p>
-                </div>
-              </div>
-              <div className="ml-auto">
-                <ThemeSelector currentTheme={currentTheme} onThemeChange={setCurrentTheme} />
-              </div>
-            </div>
-          </header>
+    <div className="min-h-screen bg-background p-4 lg:p-6 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
+            AI Workflow Design Concepts
+          </h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Explore three distinct design themes and layouts for AI-powered data analysis workflows
+          </p>
+        </div>
 
-          {/* Main Content - 3 Vertical Panels */}
-          <main className="flex-1 p-4 lg:p-6 space-y-6">
-            {/* Current Theme Display */}
-            <div className="text-center">
-              <Badge variant="outline" className="text-sm">
-                Current Theme: {currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)}
-              </Badge>
-            </div>
+        {/* Theme Selector */}
+        <ThemeSelector currentTheme={currentTheme} onThemeChange={setCurrentTheme} />
 
-            {/* Panel 1: Workflow Stream */}
-            <div className="panel-container">
+        {/* Layout Selector */}
+        <div className="panel-container p-4 mb-6">
+          <h3 className="text-sm font-medium text-foreground mb-3">Layout Style</h3>
+          <div className="flex gap-2 flex-wrap">
+            {layouts.map((layout) => {
+              const Icon = layout.icon;
+              const isActive = currentLayout === layout.id;
+              
+              return (
+                <Button
+                  key={layout.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentLayout(layout.id)}
+                  className="flex items-center gap-2"
+                >
+                  <Icon className="w-4 h-4" />
+                  {layout.name}
+                  {isActive && <Badge variant="secondary" className="ml-2 text-xs">Active</Badge>}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Current Theme & Layout Display */}
+        <div className="text-center mb-6">
+          <Badge variant="outline" className="text-sm">
+            Current: {currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)} Theme • {layouts.find(l => l.id === currentLayout)?.name} Layout
+          </Badge>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 gap-6">
+          {/* Panel 1: User Input - Always fixed position */}
+          <div>
+            <UserInputPanel 
+              onStartWorkflow={simulateWorkflow}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* Panels 2 & 3: Workflow & Summary - Dynamic layout */}
+          <div className={getLayoutClass()}>
+            <div className={currentLayout === 'split' ? 'lg:col-span-1' : ''}>
               <WorkflowStreamPanel
                 messages={messages}
                 isWaitingForApproval={isWaitingForApproval}
                 onApprove={handleApproval}
                 onReject={handleRejection}
-                layout="vertical"
+                layout={currentLayout}
               />
             </div>
 
-            {/* Panel 2: Summary */}
-            <div className="panel-container">
+            <div className={currentLayout === 'split' ? 'lg:col-span-1' : ''}>
               <SummaryPanel 
                 summaryData={summaryData}
-                layout="vertical"
+                layout={currentLayout}
               />
             </div>
+          </div>
+        </div>
 
-            {/* Footer */}
-            <div className="text-center py-6 border-t border-border">
-              <p className="text-sm text-muted-foreground">
-                AI Workflow Interface with collapsible sidebar controls
-              </p>
-            </div>
-          </main>
+        {/* Footer */}
+        <div className="text-center py-8 border-t border-border">
+          <p className="text-sm text-muted-foreground">
+            Interactive demo showcasing three design concepts for AI workflow interfaces
+          </p>
         </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 }
